@@ -121,6 +121,11 @@ namespace Udp_Message_Viewer
                   })
                 );
         }
+
+        private void ClearButton_Click(object sender, RoutedEventArgs e)
+        {
+            UdpMessageTextbox.Clear();
+        }
     }
 
 
