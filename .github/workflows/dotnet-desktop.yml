@@ -80,7 +80,7 @@ jobs:
 
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
-      run: msbuild $env:Solution_Name /t:Restore /p:Configuration=$env:Configuration
+      run: msbuild $env:Solution_Name /t:Rebuild /p:Configuration=$env:Configuration
       env:
         Configuration: ${{ matrix.configuration }}
 
@@ -90,4 +90,4 @@ jobs:
         # Artifact name
         name: 'Udp Message Viewer executable'  # optional, default is artifact
         # A file, directory or wildcard pattern that describes what to upload
-        path: Udp Message Viewer\bin\$env:Configuration\Udp Message Viewer.exe
+        path: 'Udp Message Viewer/bin/$env:Configuration/Udp Message Viewer.exe'
