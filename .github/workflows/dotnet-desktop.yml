@@ -90,4 +90,4 @@ jobs:
         # Artifact name
         name: 'Udp Message Viewer executable'  # optional, default is artifact
         # A file, directory or wildcard pattern that describes what to upload
-        path: 'Udp Message Viewer\bin\$env:Configuration\Udp Message Viewer.exe'
+        path: Udp Message Viewer\bin\$env:Configuration\Udp Message Viewer.exe
