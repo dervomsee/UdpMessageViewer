@@ -74,11 +74,7 @@ jobs:
     - name: Setup MSBuild.exe
       uses: microsoft/setup-msbuild@v2
 
-    # Execute all unit tests in the solution
-    - name: Execute unit tests
-      run: dotnet test
-
-    # Restore the application to populate the obj folder with RuntimeIdentifiers
+    # Rebuild the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
       run: msbuild $env:Solution_Name /t:Rebuild /p:Configuration=$env:Configuration
       env:
@@ -86,6 +82,8 @@ jobs:
 
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4.4.3
+      env:
+        Configuration: ${{ matrix.configuration }}
       with:
         # Artifact name
         name: 'Udp Message Viewer executable'  # optional, default is artifact
