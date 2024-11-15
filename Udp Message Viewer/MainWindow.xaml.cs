@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
@@ -15,7 +16,7 @@ namespace Udp_Message_Viewer
     public partial class MainWindow : Window
     {
         private int listenPort = 34200;
-        private Thread listenThread;
+        private CancellationTokenSource cancellationTokenSource;
         private UdpClient listenClient;
 
         public MainWindow()
@@ -23,60 +24,60 @@ namespace Udp_Message_Viewer
             InitializeComponent();
         }
 
-        private void SimplestReceiver()
+        private async Task SimplestReceiverAsync(CancellationToken cancellationToken)
         {
             TextBoxAppendMessage("Receiver started, listening on port " + listenPort + ".\n--------------------------------------------------------\n\n", "");
 
             IPEndPoint listenEndPoint = new IPEndPoint(IPAddress.Any, listenPort);
             listenClient = new UdpClient(listenEndPoint);
 
-            while (true)
+            try
             {
-                try
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    //receive UDP data
-                    byte[] data = listenClient.Receive(ref listenEndPoint);
-                    string message = Encoding.UTF8.GetString(data);
+                    //wait for UDP data
+                    UdpReceiveResult result = await listenClient.ReceiveAsync();
+                    string message = Encoding.UTF8.GetString(result.Buffer);
 
-                    //get the sender's IP and port
-                    string senderIP = listenEndPoint.Address.ToString();
+                    //get the sender's IP
+                    string senderIP = result.RemoteEndPoint.Address.ToString();
 
+                    //display the message
                     TextBoxAppendMessage(message, senderIP);
                 }
-                catch (SocketException ex)
+            }
+            catch (SocketException ex)
+            {
+                if (ex.ErrorCode != 10060)
                 {
-                    if (ex.ErrorCode != 10060)
-                    {
-                        TextBoxAppendMessage("a more serious error " + ex.ErrorCode, "");
-                    }
-                    else
-                    {
-                        TextBoxAppendMessage("expected timeout error", "");
-                    }
+                    TextBoxAppendMessage("a more serious error " + ex.ErrorCode, "");
                 }
-
-                Thread.Sleep(10); // tune for your situation, can usually be omitted
+                else
+                {
+                    TextBoxAppendMessage("expected timeout error", "");
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                // Handle the case when the UdpClient is disposed
             }
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             //stop listenClient and listenThread and cleanup
-            if (listenThread != null)
-            {
-                StopThread();
-            }
+            StopReceiver();
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private async void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (listenThread == null)
+            if (cancellationTokenSource == null)
             {
                 if (int.TryParse(PortNumber.Text, out listenPort) && listenPort > 0 && listenPort <= 65535)
                 {
-                    listenThread = new Thread(new ThreadStart(SimplestReceiver));
-                    listenThread.Start();
+                    cancellationTokenSource = new CancellationTokenSource();
                     ConnectButton.Content = "Disconnect";
+                    await Task.Run(() => SimplestReceiverAsync(cancellationTokenSource.Token));                    
                 }
                 else
                 {
@@ -87,26 +88,26 @@ namespace Udp_Message_Viewer
                                               MessageBoxButton.OK,
                                               MessageBoxImage.Error);
                 }
-
             }
             else
             {
-                StopThread();
+                StopReceiver();
                 ConnectButton.Content = "Connect";
             }
-
         }
 
-        private void StopThread()
+        private void StopReceiver()
         {
-            listenClient.Close();
-            listenThread.Abort();
-            listenThread.Join(5000);
-            listenThread = null;
-            Dispatcher.BeginInvoke((Action)(() => UdpMessageTextbox.AppendText("\n--------------------------------------------------------\nReceiver stopped.\n--------------------------------------------------------\n")));
+            if (cancellationTokenSource != null)
+            {
+                cancellationTokenSource.Cancel();
+                listenClient.Close();
+                cancellationTokenSource = null;
+                Dispatcher.BeginInvoke((Action)(() => UdpMessageTextbox.AppendText("\n--------------------------------------------------------\nReceiver stopped.\n--------------------------------------------------------\n")));
+            }
         }
 
-        private static readonly Regex _regex = new Regex(pattern: "[^0-9]+"); //regex that matches disallowed text
+        private static readonly Regex _regex = new Regex("[^0-9]+"); //regex that matches disallowed text
         private static bool IsTextAllowed(string text)
         {
             return !_regex.IsMatch(text);
@@ -120,29 +121,25 @@ namespace Udp_Message_Viewer
         private void TextBoxAppendMessage(string s, string senderIP)
         {
             Dispatcher.BeginInvoke((Action)(() =>
-                  {
-                      //get the filter ip from the textbox IpFilter and check if empty
-                      string filterIP = IpFilter.Text;
-                      if (filterIP != "")
-                      {
-                          //if not empty, check if the sender's IP matches the filter IP
-                          if (senderIP != filterIP)
-                          {
-                              return;
-                          }
-                      }
+            {
+                string filterIP = IpFilter.Text;
 
-                      //display sender's IP if available
-                      if (senderIP != "")
-                      {
-                          UdpMessageTextbox.AppendText(senderIP + ": ");
-                      }
+                //check is filterIP is a substring senderIP
+                if (!string.IsNullOrEmpty(filterIP) && !senderIP.Contains(filterIP))
+                {
+                    return;
+                }
 
-                      //append the message
-                      UdpMessageTextbox.AppendText(s);
-                      UdpMessageTextbox.ScrollToEnd();
-                  })
-                );
+                //display sender's IP if available
+                if (!string.IsNullOrEmpty(senderIP))
+                {
+                    UdpMessageTextbox.AppendText(senderIP + ": ");
+                }
+
+                //append the message
+                UdpMessageTextbox.AppendText(s);
+                UdpMessageTextbox.ScrollToEnd();
+            }));
         }
 
         private void ClearButton_Click(object sender, RoutedEventArgs e)
@@ -150,8 +147,4 @@ namespace Udp_Message_Viewer
             UdpMessageTextbox.Clear();
         }
     }
-
-
-
-
 }
