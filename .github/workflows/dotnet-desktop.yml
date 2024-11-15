@@ -75,17 +75,17 @@ jobs:
       uses: microsoft/setup-msbuild@v2
 
     # Rebuild the application to populate the obj folder with RuntimeIdentifiers
-    - name: Restore the application
+    - name: Rebuild the application
       run: msbuild $env:Solution_Name /t:Rebuild /p:Configuration=$env:Configuration
       env:
         Configuration: ${{ matrix.configuration }}
 
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4.4.3
-      env:
-        Configuration: ${{ matrix.configuration }}
       with:
         # Artifact name
         name: 'Udp Message Viewer executable'  # optional, default is artifact
         # A file, directory or wildcard pattern that describes what to upload
-        path: 'Udp Message Viewer/bin/$env:Configuration/Udp Message Viewer.exe'
+        path: Udp Message Viewer/bin/$env:Configuration/Udp Message Viewer.exe
+      env:
+        Configuration: ${{ matrix.configuration }}
