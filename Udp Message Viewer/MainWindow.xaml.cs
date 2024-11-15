@@ -25,7 +25,7 @@ namespace Udp_Message_Viewer
 
         private void SimplestReceiver()
         {
-            TextBoxAppendMessage("Receiver started, listening on port " + listenPort + ".\n--------------------------------------------------------\n\n");
+            TextBoxAppendMessage("Receiver started, listening on port " + listenPort + ".\n--------------------------------------------------------\n\n", "");
 
             IPEndPoint listenEndPoint = new IPEndPoint(IPAddress.Any, listenPort);
             listenClient = new UdpClient(listenEndPoint);
@@ -34,19 +34,24 @@ namespace Udp_Message_Viewer
             {
                 try
                 {
+                    //receive UDP data
                     byte[] data = listenClient.Receive(ref listenEndPoint);
                     string message = Encoding.UTF8.GetString(data);
-                    TextBoxAppendMessage(message);
+
+                    //get the sender's IP and port
+                    string senderIP = listenEndPoint.Address.ToString();
+
+                    TextBoxAppendMessage(message, senderIP);
                 }
                 catch (SocketException ex)
                 {
                     if (ex.ErrorCode != 10060)
                     {
-                        TextBoxAppendMessage("a more serious error " + ex.ErrorCode);
+                        TextBoxAppendMessage("a more serious error " + ex.ErrorCode, "");
                     }
                     else
                     {
-                        TextBoxAppendMessage("expected timeout error");
+                        TextBoxAppendMessage("expected timeout error", "");
                     }
                 }
 
@@ -101,7 +106,7 @@ namespace Udp_Message_Viewer
             Dispatcher.BeginInvoke((Action)(() => UdpMessageTextbox.AppendText("\n--------------------------------------------------------\nReceiver stopped.\n--------------------------------------------------------\n")));
         }
 
-        private static readonly Regex _regex = new Regex("[^0-9]+"); //regex that matches disallowed text
+        private static readonly Regex _regex = new Regex(pattern: "[^0-9]+"); //regex that matches disallowed text
         private static bool IsTextAllowed(string text)
         {
             return !_regex.IsMatch(text);
@@ -112,10 +117,28 @@ namespace Udp_Message_Viewer
             e.Handled = !IsTextAllowed(e.Text);
         }
 
-        private void TextBoxAppendMessage(string s)
+        private void TextBoxAppendMessage(string s, string senderIP)
         {
             Dispatcher.BeginInvoke((Action)(() =>
                   {
+                      //get the filter ip from the textbox IpFilter and check if empty
+                      string filterIP = IpFilter.Text;
+                      if (filterIP != "")
+                      {
+                          //if not empty, check if the sender's IP matches the filter IP
+                          if (senderIP != filterIP)
+                          {
+                              return;
+                          }
+                      }
+
+                      //display sender's IP if available
+                      if (senderIP != "")
+                      {
+                          UdpMessageTextbox.AppendText(senderIP + ": ");
+                      }
+
+                      //append the message
                       UdpMessageTextbox.AppendText(s);
                       UdpMessageTextbox.ScrollToEnd();
                   })

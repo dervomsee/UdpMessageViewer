@@ -7,11 +7,13 @@
         mc:Ignorable="d"
         Title="Udp Message Viewer" Height="450" Width="800" Closing="Window_Closing">
     <Grid>
-        <TextBox x:Name="UdpMessageTextbox" Margin="10,37,9.6,10" TextWrapping="Wrap"/>
+        <TextBox x:Name="UdpMessageTextbox" Margin="10,37,10,10" TextWrapping="Wrap"/>
         <TextBox x:Name="PortNumber" HorizontalAlignment="Left" Height="18" Margin="52,10,0,0" TextWrapping="Wrap" Text="34200" VerticalAlignment="Top" Width="61" MaxLines="1" MaxLength="5" PreviewTextInput="PortNumber_PreviewTextInput"/>
         <Label Content="Port:" HorizontalAlignment="Left" Margin="13,6,0,0" VerticalAlignment="Top" RenderTransformOrigin="-0.452,0.558" Height="26"/>
         <Button x:Name="ConnectButton" Content="Connect" HorizontalAlignment="Left" Margin="118,10,0,0" VerticalAlignment="Top" Width="109" Height="18" Click="Button_Click"/>
         <Button x:Name="ClearButton" Content="Clear" HorizontalAlignment="Left" Margin="233,10,0,0" VerticalAlignment="Top" Width="109" Height="18" Click="ClearButton_Click"/>
+        <TextBox x:Name="IpFilter" Margin="0,10,10,0" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Right" Width="128"/>
+        <Label Content="Source IP Filter:" Margin="0,6,142,0" VerticalAlignment="Top" RenderTransformOrigin="0.251,-0.236" HorizontalAlignment="Right"/>
 
     </Grid>
 </Window>
